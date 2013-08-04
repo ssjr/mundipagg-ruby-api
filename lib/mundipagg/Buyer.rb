@@ -60,8 +60,8 @@ module Mundipagg
 		def initialize
 			@addressCollection = Array.new
 			@buyerKey = '00000000-0000-0000-0000-000000000000'
-			@personTypeEnum = Buyer.PersonTypeEnum[:Person]
-			@taxDocumentTypeEnum = Buyer.DocumentTypeEnum[:CPF]
+			@personTypeEnum = Mundipagg::Buyer.PersonTypeEnum[:Person]
+			@taxDocumentTypeEnum = Mundipagg::Buyer.DocumentTypeEnum[:CPF]
 		end
 
 		# Gender enum
