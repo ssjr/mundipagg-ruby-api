@@ -1,5 +1,6 @@
 require 'uri'
 require 'net/http'
+require 'cgi'
 
 module Mundipagg
   module Simulator
@@ -8,28 +9,30 @@ module Mundipagg
 
       # Method who generate a Xml with random data to simulate a transaction POST notification.
       #
-      # @returns [String] response
+      # @returns [String, Integer] Response body, Response code
       def self.SendPostWithRandomData(url, type)
 
         types = {:credit=>1, :boleto=>2, :online_debit=>3}
 
         if not types.include? type
-          raise(ArgumentError, ":type is not valid. It should be :credit, :boleto or :online_debit.")
+          raise(ArgumentError, ":type is not valid. It should be :credit or :boleto.")
         end
 
         uri = URI(url)
         xml = ''
 
     	amount = Array.new(5){[*'0'..'9'].sample}.join
-    	previous_status = Array.new(1){['PartialPaid', 'Paid', 'Voided', 'Refunded', 'Generated'].sample}.join
-    	actual_status = previous_status
-
-    	until actual_status != previous_status
-			actual_status = Array.new(1){['Paid', 'Voided', 'Opened'].sample}.join
-    	end
 
 
         if type == :credit
+
+			previous_status = Array.new(1){['OverPaid', 'PartialPaid', 'Paid', 'Voided', 'Refunded'].sample}.join
+			actual_status = previous_status
+
+			until actual_status != previous_status
+				actual_status = Array.new(1){['OverPaid', 'PartialPaid', 'Paid', 'Voided', 'Refunded'].sample}.join
+			end
+
         	
 			xml = "<StatusNotification xmlns=\"http://schemas.datacontract.org/2004/07/MundiPagg.NotificationService.DataContract\"
 										xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\">
@@ -55,9 +58,18 @@ module Mundipagg
 								<MerchantKey>00000000-0000-0000-0000-000000000000</MerchantKey>
 								<OrderKey>00000000-0000-0000-0000-000000000000</OrderKey>
 								<OrderReference>"+Array.new(12){[*'A'..'Z', *0..9].sample}.join+"</OrderReference>
-								<OrderStatus>"+Array.new(1){[].sample}.join+"</OrderStatus>
+								<OrderStatus>"+Array.new(1){['Paid', 'PartialPaid', 'WithError', 'Opened'].sample}.join+"</OrderStatus>
 							</StatusNotification>"
         elsif type == :boleto
+
+			previous_status = Array.new(1){['OverPaid', 'PartialPaid', 'Paid', 'Generated'].sample}.join
+			actual_status = previous_status
+
+			until actual_status != previous_status
+				actual_status = Array.new(1){['OverPaid', 'PartialPaid', 'Paid', 'Generated'].sample}.join
+			end
+
+
 			xml = "<StatusNotification xmlns=\"http://schemas.datacontract.org/2004/07/MundiPagg.NotificationService.DataContract\"
 										xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\">
 					<AmountInCents>"+amount+"</AmountInCents>
@@ -77,15 +89,15 @@ module Mundipagg
 					<MerchantKey>00000000-0000-0000-0000-000000000000</MerchantKey>
 					<OrderKey>00000000-0000-0000-0000-000000000000</OrderKey>
 					<OrderReference>"+Array.new(12){[*'A'..'Z', *0..9].sample}.join+"</OrderReference>
-					<OrderStatus>"+Array.new(1){['Paid', 'PartialPaid', 'WithError'].sample}.join+"</OrderStatus>
+					<OrderStatus>"+Array.new(1){['Paid', 'PartialPaid', 'WithError', 'Opened'].sample}.join+"</OrderStatus>
 				</StatusNotification>"
         end
 
         xml = xml.strip
-        xml = xml.gsub! /\t/, ''
-        xml = xml.gsub! /\n/, ''
+        xml = xml.gsub! /\t/, '' #remove tabs 
+        xml = xml.gsub! /\n/, '' #remove new-lines
 
-        res = Net::HTTP.post_form(uri, 'xmlNotification' => xml)
+        res = Net::HTTP.post_form(uri, 'xmlNotification' => CGI.unescapeHTML(xml))
 
         return res.body, res.code
       end
