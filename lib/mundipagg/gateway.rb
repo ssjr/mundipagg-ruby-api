@@ -140,8 +140,10 @@ module Mundipagg
       xml_hash['mun:OrderReference'] = request.orderReference
       xml_hash['mun:RequestKey'] = request.requestKey
 
-      if request.buyer.nil? == false
+      if not request.buyer.nil?
         xml_hash['mun:Buyer'] = CreateBuyer(request)
+      else
+        xml_hash['mun:Buyer'] = nil
       end
 
       if not request.creditCardTransactionCollection.nil? and request.creditCardTransactionCollection.count > 0
@@ -194,7 +196,7 @@ module Mundipagg
 
       }
 
-      if request.buyer.addressCollection.count > 0
+      if request.buyer.addressCollection.nil? == false and request.buyer.addressCollection.count > 0
 
       	buyer['mun:BuyerAddressCollection'] = {'mun:BuyerAddress'=>Array.new}
 
