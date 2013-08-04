@@ -18,17 +18,19 @@ module Mundipagg
         end
 
         uri = URI(url)
+        xml = ''
 
-        if type==:credit
+    	amount = Array.new(5){[*'0'..'9'].sample}.join
+    	previous_status = Array.new(1){['PartialPaid', 'Paid', 'Voided', 'Refunded', 'Generated'].sample}.join
+    	actual_status = previous_status
+
+    	until actual_status != previous_status
+			actual_status = Array.new(1){['Paid', 'Voided', 'Opened'].sample}.join
+    	end
+
+
+        if type == :credit
         	
-        	amount = Array.new(5){[*'0'..'9'].sample}.join
-        	previous_status = Array.new(1){['Paid', 'Voided', 'Opened'].sample}.join
-        	actual_status = previous_status
-
-        	until actual_status != previous_status
-				actual_status = Array.new(1){['Paid', 'Voided', 'Opened'].sample}.join
-        	end
-
 			xml = "<StatusNotification xmlns=\"http://schemas.datacontract.org/2004/07/MundiPagg.NotificationService.DataContract\"
 										xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\">
 								<AmountInCents>"+amount+"</AmountInCents>
@@ -52,11 +54,31 @@ module Mundipagg
 								</CreditCardTransaction>
 								<MerchantKey>00000000-0000-0000-0000-000000000000</MerchantKey>
 								<OrderKey>00000000-0000-0000-0000-000000000000</OrderKey>
-								<OrderReference>"+Array.new(12){[*'A'..'Z', 0..9].sample}.join+"</OrderReference>
+								<OrderReference>"+Array.new(12){[*'A'..'Z', *0..9].sample}.join+"</OrderReference>
 								<OrderStatus>"+Array.new(1){[].sample}.join+"</OrderStatus>
 							</StatusNotification>"
-        else
-          xml = ''
+        elsif type == :boleto
+			xml = "<StatusNotification xmlns=\"http://schemas.datacontract.org/2004/07/MundiPagg.NotificationService.DataContract\"
+										xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\">
+					<AmountInCents>"+amount+"</AmountInCents>
+					<AmountPaidInCents>"+amount+"</AmountPaidInCents>
+					<BoletoTransaction>
+						<AmountInCents>"+amount+"</AmountInCents>
+						<AmountPaidInCents>"+amount+"</AmountPaidInCents>
+						<BoletoExpirationDate>"+Time.at(rand * Time.now.to_i).strftime('%FT%T%')+"</BoletoExpirationDate>
+						<NossoNumero>"+Array.new(8){[*0..9].sample}.join+"</NossoNumero>
+						<StatusChangedDate>"+Time.at(rand * Time.now.to_i).strftime('%FT%T%')+"</StatusChangedDate>
+						<TransactionKey>00000000-0000-0000-0000-000000000000</TransactionKey>
+						<TransactionReference>"+Array.new(12){[*'A'..'Z'].sample}.join+"</TransactionReference>
+						<PreviousBoletoTransactionStatus>"+previous_status+"</PreviousBoletoTransactionStatus>
+						<BoletoTransactionStatus>"+actual_status+"</BoletoTransactionStatus>
+					</BoletoTransaction>
+					<CreditCardTransaction i:nil=\"true\"/>
+					<MerchantKey>00000000-0000-0000-0000-000000000000</MerchantKey>
+					<OrderKey>00000000-0000-0000-0000-000000000000</OrderKey>
+					<OrderReference>"+Array.new(12){[*'A'..'Z', *0..9].sample}.join+"</OrderReference>
+					<OrderStatus>"+Array.new(1){['Paid', 'PartialPaid', 'WithError'].sample}.join+"</OrderStatus>
+				</StatusNotification>"
         end
 
         xml = xml.strip
